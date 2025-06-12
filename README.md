@@ -18,7 +18,9 @@ one for whichever OS targets you wish.
  You will also need to place https://github.com/rickparrish/RMDoor pas
  files into the directory prior to running molu.sh
 
- Once it compiles, mv ./MysticOLUtil ~/mystic/data
+ Once it compiles, mv ./MysticOLUtil ~/mystic
 
- MysticOLUtil needs to be in the same location as oneliner.dat
+ The output of the original code for MysticOLUtil needs to be in the
+ same location as oneliner.dat, This fork allows you to put MysticOLUtil 
+ into your root Mystic BBS directory with the rest of the binaries.
  
