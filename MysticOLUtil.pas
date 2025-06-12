@@ -37,26 +37,52 @@ var
   F: File Of OneLineRec;
   Rec: OneLineRec;
   idx: integer;
+  NumRecords: integer;
+  ReadSuccess: boolean;
 begin
   OneLinerFullPath := GetAbsolutePath(OneLinerFileName);
 
   if NOT (OpenFileForReadWrite(F, OneLinerFullPath, 2500)) then
-  begin 
+  begin
     DoorWriteln('|04Unable to open ' + OneLinerFullPath + ' for append.|07');
     halt;
   end;
-
+  
   try
-    idx:=0;
-    //Writeln('FileSize:' + IntToStr(FileSize(F)) + ' Rec Size:' + IntToStr(SizeOf(OneLineRec)));
-    Writeln('Num Records:' + IntToStr(FileSize(F) div SizeOf(OneLineRec)));
+    // Calculate number of records
+    NumRecords := FileSize(F) div SizeOf(OneLineRec);
+    
+    // Check if file has no records
+    if NumRecords = 0 then
+    begin
+      DoorWriteln('|03No records found in ' + OneLinerFullPath + '|07');
+      Exit;
+    end;
+
+    DoorWriteln('Num Records: ' + IntToStr(NumRecords));
+    
+    idx := 0;
     repeat
-      Read(F, Rec);
-      Writeln('[' + IntToStr(idx) + '] ' + '(' + Rec.From + ') : ' + Rec.Text);
-      Inc(idx);
-    until EOF(F);
+      ReadSuccess := true;
+      try
+        Read(F, Rec);
+      except
+        on E: EInOutError do
+        begin
+          ReadSuccess := false;
+          DoorWriteln('|04Error reading record at position ' + IntToStr(idx) + '|07');
+        end;
+      end;
+      
+      if ReadSuccess then
+      begin
+        DoorWriteln('[' + IntToStr(idx) + '] ' + '(' + Rec.From + ') : ' + Rec.Text);
+        Inc(idx);
+      end;
+    until EOF(F) or not ReadSuccess;
+    
   finally
-    Close(F);  
+    Close(F);
   end;
 end;
 
@@ -68,6 +94,7 @@ var
   idxRecToDelete, idxRecsToMove, idxCurrRec: integer;
   yn: char;
   onelinerRecs: specialize TList<OneLineRec>;
+  NumRecords: integer;
 begin
   OneLinerFullPath := GetAbsolutePath(OneLinerFileName);
 
@@ -77,21 +104,37 @@ begin
     halt;
   end;
 
-  Write('Enter the record to delete: (0-' + IntToStr((FileSize(F) div SizeOf(OneLineRec))-1) + ') -> ');
-  Readln(idxRecToDelete);
-
   try
-    onelinerRecs:=specialize TList<OneLineRec>.Create();
-    //Writeln('FileSize:' + IntToStr(FileSize(F)) + ' Rec Size:' + IntToStr(SizeOf(OneLineRec)));
-    DoorWriteln('|02Num Records:' + IntToStr(FileSize(F) div SizeOf(OneLineRec)) + '|07');
-    if (idxRecToDelete <= FileSize(F) div SizeOf(OneLineRec)) then 
-    begin 
+    // Calculate number of records
+    NumRecords := FileSize(F) div SizeOf(OneLineRec);
+    
+    // Check if file has no records
+    if NumRecords = 0 then
+    begin
+      DoorWriteln('|03No records found in ' + OneLinerFullPath + '|07');
+      Exit;
+    end;
+
+    Write('Enter the record to delete: (0-' + IntToStr(NumRecords-1) + ') -> ');
+    Readln(idxRecToDelete);
+
+    onelinerRecs := specialize TList<OneLineRec>.Create();
+    try
+      DoorWriteln('|02Num Records:' + IntToStr(NumRecords) + '|07');
+      
+      if (idxRecToDelete < 0) or (idxRecToDelete >= NumRecords) then
+      begin
+        DoorWriteln('|04Invalid record number!|07');
+        Exit;
+      end;
+
       Seek(F, SizeOf(OneLineRec)*idxRecToDelete);
       Read(F, Rec);
       DoorWriteln('[' + IntToStr(idxRecToDelete) + '] ' + '(' + Rec.From + ') : ' + Rec.Text);
-      DoorWriteln('|02Delete this entry (Y/N) -> ');
+      DoorWrite('|02Delete this entry (Y/N) -> |07');
       Readln(yn);
-      if (UpCase(yn)='Y') then 
+      
+      if (UpCase(yn) = 'Y') then 
       begin
         (* Read the remaining records *)
         Seek(F, 0);
@@ -107,18 +150,25 @@ begin
         (* Rewrite the file with the deleted record removed *)
         if NOT (OpenFileForOverwrite(F, OneLinerFullPath, 2500)) then
         begin 
-          DoorWriteln('|04Unable to open ' + OneLinerFullPath + ' for append.|07');
+          DoorWriteln('|04Unable to open ' + OneLinerFullPath + ' for overwrite.|07');
           halt;
         end;
  
-        (* Move all of the files *)
+        (* Write all records except the deleted one *)
         for idxRecsToMove := 0 to onelinerRecs.Count-1 do 
           Write(F, onelinerRecs[idxRecsToMove]);
+          
+        DoorWriteln('|02Record successfully deleted.|07');
+      end
+      else
+      begin
+        DoorWriteln('|03Deletion cancelled.|07');
       end;
+    finally
+      FreeAndNil(onelinerRecs);
     end;
   finally
     Close(F);  
-    FreeAndNil(onelinerRecs);
   end;
 end;
 
