@@ -13,3 +13,12 @@ so there should be no issues. If you reach out with specific
 flavors of Unix you would like, I can do my best to provide
 binaries but otherwise all of the code is here to generate 
 one for whichever OS targets you wish.
+
+# To Compile
+ You will also need to place https://github.com/rickparrish/RMDoor pas
+ files into the directory prior to running molu.sh
+
+ Once it compiles, mv ./MysticOLUtil ~/mystic/data
+
+ MysticOLUtil needs to be in the same location as oneliner.dat
+ 
