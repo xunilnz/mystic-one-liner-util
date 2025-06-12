@@ -5,7 +5,7 @@ Program MysticOLUtil;
 Uses Generics.Collections, StrUtils, SysUtils, Crt, Door, FileUtils;
 
 Const 
-  OneLinerFileName = 'oneliner.dat';
+  OneLinerFileName = 'data/oneliner.dat';
 
 Type 
 (* ONELINERS.DAT found in the data directory.  This file contains all the
