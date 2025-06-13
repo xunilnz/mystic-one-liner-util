@@ -4,11 +4,20 @@ Program MysticOLUtil;
 
 Uses Generics.Collections, StrUtils, SysUtils, Crt, Door, FileUtils;
 
-Const 
-  OneLinerFileName = 'data/oneliner.dat';
+function GetOnelinerPath: string;
+var
+  MysticPath: string;
+begin
+  MysticPath := GetEnvironmentVariable('MYSTICBBS');
+  if MysticPath = '' then
+    MysticPath := GetCurrentDir;
+  if (MysticPath <> '') and (MysticPath[Length(MysticPath)] <> '/') then
+    MysticPath := MysticPath + '/';
+  GetOnelinerPath := MysticPath + 'data/oneliner.dat';
+end;
 
-Type 
-(* ONELINERS.DAT found in the data directory.  This file contains all the
+Type
+(* ONELINER.DAT found in the data directory.  This file contains all the
    one-liner data.  It can be any number of records in size. *)
 
   OneLineRec = Record
@@ -22,9 +31,9 @@ DoorWriteln('                   $$sss  s$"                              5m  ');
 DoorWriteln('                   $$  $$ $$                                   ');
 DoorWriteln('|03                   $$"""" $$""$e $"//  $$""s  $$""$$ $$sssss   |07');
 DoorWriteln('|02                   $$     $$  $$ $SSSS $$  $$ $$$$$$ $$ $$ $$  |07');
-DoorWriteln; 
+DoorWriteln;
 DoorWriteln('|05                         --- P R O D U C T I O N S ---       |07');
-DoorWriteln('|05                                  EST : 2018                 |07'); 
+DoorWriteln('|05                                  EST : 2018                 |07');
 DoorWriteln;
 DoorWriteln;
 DoorWriteln('                   |0AMystic One-Liner Utility                    |07');
@@ -40,18 +49,18 @@ var
   NumRecords: integer;
   ReadSuccess: boolean;
 begin
-  OneLinerFullPath := GetAbsolutePath(OneLinerFileName);
+  OneLinerFullPath := GetOnelinerPath;
 
   if NOT (OpenFileForReadWrite(F, OneLinerFullPath, 2500)) then
   begin
     DoorWriteln('|04Unable to open ' + OneLinerFullPath + ' for append.|07');
     halt;
   end;
-  
+
   try
     // Calculate number of records
     NumRecords := FileSize(F) div SizeOf(OneLineRec);
-    
+
     // Check if file has no records
     if NumRecords = 0 then
     begin
@@ -60,7 +69,7 @@ begin
     end;
 
     DoorWriteln('Num Records: ' + IntToStr(NumRecords));
-    
+
     idx := 0;
     repeat
       ReadSuccess := true;
@@ -73,14 +82,14 @@ begin
           DoorWriteln('|04Error reading record at position ' + IntToStr(idx) + '|07');
         end;
       end;
-      
+
       if ReadSuccess then
       begin
         DoorWriteln('[' + IntToStr(idx) + '] ' + '(' + Rec.From + ') : ' + Rec.Text);
         Inc(idx);
       end;
     until EOF(F) or not ReadSuccess;
-    
+
   finally
     Close(F);
   end;
@@ -96,10 +105,10 @@ var
   onelinerRecs: specialize TList<OneLineRec>;
   NumRecords: integer;
 begin
-  OneLinerFullPath := GetAbsolutePath(OneLinerFileName);
+  OneLinerFullPath := GetOnelinerPath;
 
   if NOT (OpenFileForReadWrite(F, OneLinerFullPath, 2500)) then
-  begin 
+  begin
     DoorWriteln('|04Unable to open ' + OneLinerFullPath + ' for append.|07');
     halt;
   end;
@@ -107,7 +116,7 @@ begin
   try
     // Calculate number of records
     NumRecords := FileSize(F) div SizeOf(OneLineRec);
-    
+
     // Check if file has no records
     if NumRecords = 0 then
     begin
@@ -121,7 +130,7 @@ begin
     onelinerRecs := specialize TList<OneLineRec>.Create();
     try
       DoorWriteln('|02Num Records:' + IntToStr(NumRecords) + '|07');
-      
+
       if (idxRecToDelete < 0) or (idxRecToDelete >= NumRecords) then
       begin
         DoorWriteln('|04Invalid record number!|07');
@@ -133,8 +142,8 @@ begin
       DoorWriteln('[' + IntToStr(idxRecToDelete) + '] ' + '(' + Rec.From + ') : ' + Rec.Text);
       DoorWrite('|02Delete this entry (Y/N) -> |07');
       Readln(yn);
-      
-      if (UpCase(yn) = 'Y') then 
+
+      if (UpCase(yn) = 'Y') then
       begin
         (* Read the remaining records *)
         Seek(F, 0);
@@ -149,15 +158,15 @@ begin
 
         (* Rewrite the file with the deleted record removed *)
         if NOT (OpenFileForOverwrite(F, OneLinerFullPath, 2500)) then
-        begin 
+        begin
           DoorWriteln('|04Unable to open ' + OneLinerFullPath + ' for overwrite.|07');
           halt;
         end;
- 
+
         (* Write all records except the deleted one *)
-        for idxRecsToMove := 0 to onelinerRecs.Count-1 do 
+        for idxRecsToMove := 0 to onelinerRecs.Count-1 do
           Write(F, onelinerRecs[idxRecsToMove]);
-          
+
         DoorWriteln('|02Record successfully deleted.|07');
       end
       else
@@ -168,7 +177,7 @@ begin
       FreeAndNil(onelinerRecs);
     end;
   finally
-    Close(F);  
+    Close(F);
   end;
 end;
 
@@ -192,10 +201,10 @@ begin
   repeat
     Help;
     selection:=UpCase(ReadKey);
-    case selection of 
+    case selection of
     '?': Help;
     'L': ListOneLiners;
     'D': DeleteOneLiner;
-    end; 
+    end;
   until (selection='Q');
 end.
