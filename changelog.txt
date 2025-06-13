@@ -16,7 +16,13 @@ All notable changes to this project will be documented in this file.
 ==============================================================================
        name: Mystic One-Liner Utility (example: MRChat)
      author: Hayes Zyxel <PHENOM>
-	 
+
+## [1.0.1] - 06/13/2025 - Ferret, Alcatraz SysOp
+### Added
+ - Exception handling when there is no data in the oneliners data file
+ - checks for $MYSTICBBS environment varaible to get the location of the
+   Mystic BBS data files so app/door can be called from any any directory
+
 ## [1.0.0] - 04/17/2022
 
 ### Added
