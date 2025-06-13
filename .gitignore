@@ -6,3 +6,5 @@ MysticOLUtil.o
 *.o
 MysticOLUtil
 *.ppu
+fp.*
+
