@@ -17,6 +17,16 @@ All notable changes to this project will be documented in this file.
        name: Mystic One-Liner Utility (example: MRChat)
      author: Hayes Zyxel <PHENOM>
 
+## [1.0.2] - 06/16/2025 - Ferret, Alcatraz SysOp
+### Added
+ - Edit Oneliner, adds * next to username when edited. Allows the Sysop to fix 
+   typos if needed, or [censor] language.
+ - Export oneliner to pipe color code ASC file - Current directory.
+
+### TODO
+ - Get theme directory to store exported file in
+ - Load the text of the one-liner in to the editor when editing.
+
 ## [1.0.1] - 06/13/2025 - Ferret, Alcatraz SysOp
 ### Added
  - Exception handling when there is no data in the oneliners data file
@@ -30,5 +40,5 @@ All notable changes to this project will be documented in this file.
 - Delete a one-liner by index 
 
 ==============================================================================
- >> CREATED: April 17, 2022                        MODIFIED: June 13, 2025 <<
+ >> CREATED: April 17, 2022                        MODIFIED: June 16, 2025 <<
 ==============================================================================

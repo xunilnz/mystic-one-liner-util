@@ -181,12 +181,206 @@ begin
   end;
 end;
 
+procedure ExportOneLiners;
+var
+  OneLinerFullPath: string;
+  ExportFileName: string;
+  F: File Of OneLineRec;
+  ExportFile: Text;
+  Rec: OneLineRec;
+  idx: integer;
+  NumRecords: integer;
+  ReadSuccess: boolean;
+begin
+  // Get the path to the oneliners.dat file
+  OneLinerFullPath := GetOnelinerPath;
+
+  // Set the export filename (could make this configurable)
+  ExportFileName := 'oneliners.asc';
+
+  if NOT (OpenFileForReadWrite(F, OneLinerFullPath, 2500)) then
+  begin
+    DoorWriteln('|04Unable to open ' + OneLinerFullPath + ' for reading.|07');
+    Halt;
+  end;
+
+  // Create the export file
+  Assign(ExportFile, ExportFileName);
+  {$I-}
+  Rewrite(ExportFile);
+  {$I+}
+  if IOResult <> 0 then
+  begin
+    DoorWriteln('|04Unable to create export file: ' + ExportFileName + '|07');
+    Close(F);
+    Halt;
+  end;
+
+  try
+    // Calculate number of records
+    NumRecords := FileSize(F) div SizeOf(OneLineRec);
+
+    // Check if file has no records
+    if NumRecords = 0 then
+    begin
+      DoorWriteln('|03No records found in ' + OneLinerFullPath + '|07');
+      Exit;
+    end;
+
+    DoorWriteln('|11Exporting ' + IntToStr(NumRecords) + ' oneliners to ' + ExportFileName + '|07');
+
+    idx := 0;
+    repeat
+      ReadSuccess := true;
+      try
+        Read(F, Rec);
+      except
+        on E: EInOutError do
+        begin
+          ReadSuccess := false;
+          DoorWriteln('|04Error reading record at position ' + IntToStr(idx) + '|07');
+        end;
+      end;
+
+      if ReadSuccess then
+      begin
+        // Write to pipe-code ASCII file
+        WriteLn(ExportFile, '|03[|07' + Rec.From + '|03]|07 ' + Rec.Text);
+        Inc(idx);
+
+        // Show progress every 10 records
+        if (idx mod 10 = 0) then
+          DoorWrite('|15.|07');
+      end;
+    until EOF(F) or not ReadSuccess;
+
+    DoorWriteln('');
+    DoorWriteln('|11Successfully exported ' + IntToStr(idx) + ' oneliners to ' + ExportFileName + '|07');
+
+  finally
+    Close(F);
+    Close(ExportFile);
+  end;
+end;
+
+procedure EditOneLiner;
+var
+  OneLinerFullPath: string;
+  F: File Of OneLineRec;
+  Rec: OneLineRec;
+  NewText: string;
+  NumRecords: integer;
+  ReadSuccess: boolean;
+  IndexStr: string;
+  Index: Integer;
+  ErrorCode: Integer;
+begin
+  // Get the path to the oneliners.dat file
+  OneLinerFullPath := GetOnelinerPath;
+
+  // First open the file to check size
+  if NOT (OpenFileForReadWrite(F, OneLinerFullPath, 2500)) then
+  begin
+    DoorWriteln('|04Unable to open ' + OneLinerFullPath + ' for editing.|07');
+    Exit;
+  end;
+
+  try
+    NumRecords := FileSize(F) div SizeOf(OneLineRec);
+    if NumRecords = 0 then
+    begin
+      DoorWriteln('|03No oneliners found in the database.|07');
+      Exit;
+    end;
+
+    // Get which oneliner to edit from user
+    DoorWrite('|15Enter oneliner number to edit (1-' + IntToStr(NumRecords) + '): |07');
+    Readln(IndexStr);
+    Val(IndexStr, Index, ErrorCode);
+
+    // Validate input
+    if ErrorCode <> 0 then
+    begin
+      DoorWriteln('|04Error: Please enter a valid number|07');
+      Exit;
+    end;
+
+    // Convert to 0-based index and validate
+    Index := Index - 1;
+    if (Index < 0) or (Index >= NumRecords) then
+    begin
+      DoorWriteln('|04Error: Please enter a number between 1 and ' + IntToStr(NumRecords) + '|07');
+      Exit;
+    end;
+
+    // Position to the record
+    Seek(F, Index);
+
+    // Read the existing record
+    ReadSuccess := true;
+    try
+      Read(F, Rec);
+    except
+      on E: EInOutError do
+      begin
+        ReadSuccess := false;
+        DoorWriteln('|04Error reading oneliner at position ' + IntToStr(Index + 1) + '|07');
+      end;
+    end;
+
+    if not ReadSuccess then Exit;
+
+    // Display current oneliner
+    DoorWriteln('');
+    DoorWriteln('|15Editing oneliner #' + IntToStr(Index + 1) + '|07');
+    DoorWriteln('|03From:|07 ' + Rec.From);
+    DoorWriteln('|03Text:|07 ' + Rec.Text);
+    DoorWriteln('');
+
+    // Get new text from user
+    DoorWrite('|11Enter new text (79 chars max, blank to cancel):|07 ');
+    Readln(NewText);
+
+    // Check for cancel
+    if NewText = '' then
+    begin
+      DoorWriteln('|03Edit canceled.|07');
+      Exit;
+    end;
+
+    // Validate length
+    if Length(NewText) > 79 then
+    begin
+      DoorWriteln('|04Error: Text too long (max 79 characters)|07');
+      Exit;
+    end;
+
+    // Mark as edited if not already marked
+    if (Rec.From <> '') and (Rec.From[1] <> '*') then
+      Rec.From := '*' + Rec.From;
+
+    // Update the text
+    Rec.Text := NewText;
+
+    // Write back to file
+    Seek(F, Index);
+    Write(F, Rec);
+
+    DoorWriteln('|11Oneliner #' + IntToStr(Index + 1) + ' updated successfully.|07');
+
+  finally
+    Close(F);
+  end;
+end;
+
 procedure Help;
 begin
   DoorWriteln;
   DoorWriteln('|02Options|07');
   DoorWriteln('|02-------|07');
   DoorWriteln('|02L|07)ist One-Liners');
+  DoorWriteLn('|02E|07)dit a One-Liner');
+  DoorWriteLn('|07e|02X|07)port One-liners');
   DoorWriteln('|02D|07)elete One-Liner');
   DoorWriteln('|02Q|07)uit');
   DoorWriteln;
@@ -204,7 +398,9 @@ begin
     case selection of
     '?': Help;
     'L': ListOneLiners;
+    'E': EditOneLiner;
     'D': DeleteOneLiner;
+    'X': ExportOneLiners;
     end;
   until (selection='Q');
 end.
